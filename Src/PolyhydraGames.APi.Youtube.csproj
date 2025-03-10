@@ -11,7 +11,7 @@
 		<RepositoryUrl>https://github.com/lancer1977/Youtube.API</RepositoryUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageProjectUrl>https://github.com/lancer1977/Youtube.API</PackageProjectUrl>
-		<PackageIcon>https://raw.githubusercontent.com/lancer1977/Youtube.API/main/icon.png</PackageIcon>
+		<PackageIcon>icon.png</PackageIcon>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<Nullable>enable</Nullable>
 		<Description>
