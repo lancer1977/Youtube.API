@@ -63,5 +63,6 @@ jobs:
       - name: Publish to NuGet
         env:
           MY_SECRET: ${{ secrets.NUGET_API_KEY }}
-        run: dotnet nuget push ./output/*.nupkg --api-key $MY_SECRET --source https://api.nuget.org/v3/index.json --skip-duplicate
+          NOT_SECRET: ${{ env.NOT_A_SECRET }}
+        run: echo $NOT_SECRET && dotnet nuget push ./output/*.nupkg --api-key $MY_SECRET --source https://api.nuget.org/v3/index.json --skip-duplicate
 
