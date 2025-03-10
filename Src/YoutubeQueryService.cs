@@ -40,12 +40,12 @@ public class YoutubeQueryService : IYoutubeQuery
         return result.Items.Select(x => x).FirstOrDefault();
     }
 
-    public Task<List<string>> GetUserVideos(string username, string query)
+    public Task<IList<SearchResult>> GetUserVideos(string username, string query)
     {
         return GetUserUploads(username, query, null);
     }
 
-    public async Task<List<string>> GetUserUploads(string username, string query, string? paginationToken)
+    public async Task<IList<SearchResult>> GetUserUploads(string username, string query, string? paginationToken)
     {
         var user = await GetChannel(username);
         var searchRequest = _youtubeService.Search.List("snippet");
@@ -64,10 +64,10 @@ public class YoutubeQueryService : IYoutubeQuery
         {
             Console.WriteLine($"Title: {item.Snippet.Title}, Video ID: {item.Id.VideoId}");
         }
-        return response.Items.Select(x => x.Snippet.Title).ToList();
+        return response.Items;
     }
 
-    public async Task<List<PlaylistSnippet>> GetUserPlaylists(string username)
+    public async Task<IList<PlaylistSnippet>> GetUserPlaylists(string username)
     {
         var user = await GetChannel(username);
         var request = _youtubeService.Playlists.List("snippet");
