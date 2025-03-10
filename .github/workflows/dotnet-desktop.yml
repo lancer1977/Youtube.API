@@ -57,7 +57,7 @@ jobs:
           dotnet-version: '8.0.x' 
           
       - name: Pack NuGet Package
-        run: dotnet pack PolyhydraGames.Api.Youtube.csproj --configuration Release  --output ./output
+        run: dotnet pack **/PolyhydraGames.APi.Youtube.csproj --configuration Release  --output ./output
 
       - name: Publish to NuGet
         run: dotnet nuget push ./output/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
