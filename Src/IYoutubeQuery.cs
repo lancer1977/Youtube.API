@@ -1,9 +1,13 @@
-﻿namespace APi.Youtube
+﻿using Google.Apis.YouTube.v3.Data;
+
+namespace APi.Youtube
 {
     public interface IYoutubeQuery
     {
-        public Task<List<string>> GetUserVideos(string username);
-        public Task<List<string>> GetUserPlaylists(string username); 
+        public Task<List<string>> GetUserVideos(string username, string query ="");
+        public Task<List<PlaylistSnippet>> GetUserPlaylists(string username); 
+        Task<Video?> GetVideoDetails(string videoId);
+        Task<string?> GetUserID(string username);
     }
 
     public interface IYoutubeUserQuery

@@ -36,10 +36,18 @@ namespace Test
             Query = host.Services.GetService<IYoutubeQuery>();
         }
 
-        [TestCase("segafan001")]
-        public async Task GetUserVideos(string username)
+        [TestCase("@segafan001")]
+        public async Task GetUser(string username)
         {
-            var result = await Query.GetUserVideos(username);
+            var result = await Query.GetUserID(username);
+            Console.WriteLine("ChannelID:" + result);
+            Assert.That(result != null);
+        }
+
+        [TestCase("@segafan001", "Zelda")]
+        public async Task GetUserVideos(string username, string query)
+        {
+            var result = await Query.GetUserVideos(username, query);
             Assert.That(result.Count, Is.GreaterThan(0)); 
         }
 
@@ -49,6 +57,13 @@ namespace Test
         {
             var result = await Query.GetUserPlaylists(username);
             Assert.That(result.Count, Is.GreaterThan(0));
+        }
+        [TestCase("1cTdXzCidg8")]
+        public async Task GetVideoDetails(string videoId)
+        {
+            var result = await Query.GetVideoDetails(videoId);
+            Console.WriteLine(result.ContentDetails.Duration);
+            Assert.That(result != null);
         }
 
         //[TestCase("segafan001","Dungeon Explorer","tg16", ExpectedResult = 2)]
