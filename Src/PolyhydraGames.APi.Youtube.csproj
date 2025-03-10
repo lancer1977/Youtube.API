@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup> 
+		<ImplicitUsings>enable</ImplicitUsings>
+		<TargetFrameworks>net8.0</TargetFrameworks>
+		<Version>1.0.0</Version>
+		<Authors>Breadcrumb</Authors>
+		<Company>Polyhydra Games</Company>
+		<Description>A bridge library for interacting with YouTube via API.</Description>
+		<PackageTags>youtube, api, bridge, nuget</PackageTags>
+		<RepositoryUrl>https://github.com/lancer1977/Youtube.API</RepositoryUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageProjectUrl>https://github.com/lancer1977/Youtube.API</PackageProjectUrl>
+		<PackageIcon>https://avatars.githubusercontent.com/u/3161506</PackageIcon>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<Nullable>enable</Nullable>
+		<Description>
+			A set of helpers to simplify analyzing youtube channel videos.
+		</Description>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Google.Apis.YouTube.v3" Version="1.69.0.3707" />
+	</ItemGroup>
+
+</Project>

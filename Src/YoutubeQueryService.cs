@@ -1,8 +1,9 @@
 ﻿using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
+using PolyhydraGames.APi.Youtube.Interfaces;
 
-namespace APi.Youtube;
+namespace PolyhydraGames.APi.Youtube;
 
 public class YoutubeQueryService : IYoutubeQuery
 {
