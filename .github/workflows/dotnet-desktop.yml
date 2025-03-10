@@ -60,8 +60,6 @@ jobs:
         run: dotnet pack **/PolyhydraGames.APi.Youtube.csproj --configuration Release  --output ./output
 
 
-      - name: Publish to NuGet
-        env:
-          MY_SECRET: ${{ secrets.NUGET_API_KEY }}
-        run: dotnet nuget push ./output/*.nupkg --api-key ${{ env.MY_SECRET }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      - name: Publish to NuGet 
+        run: dotnet nuget push ./output/*.nupkg --api-key ${{ env.NOT_A_SECRET }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
