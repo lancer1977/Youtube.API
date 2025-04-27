@@ -2,6 +2,6 @@
 
 public interface IYoutubeConfig
 {
-    public string ApiKey { get;  }
-    public string ApplicationName { get;  } 
+    public string ApiKey { get; }
+    public string ApplicationName { get; }
 }

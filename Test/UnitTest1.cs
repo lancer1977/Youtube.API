@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Configuration;
-using System.ComponentModel.Design;
 using Microsoft.Extensions.DependencyInjection;
 using PolyhydraGames.APi.Youtube;
 using PolyhydraGames.APi.Youtube.Interfaces;
@@ -14,7 +13,7 @@ public class ApiTests
     [SetUp]
     public void Setup()
     {
- 
+
 
         var config = new ConfigurationBuilder()
             //.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -28,7 +27,7 @@ public class ApiTests
             services.AddSingleton<IConfiguration>(config);
             //services.AddSingleton(_ => httpMock.Object);
             services.AddSingleton<IYoutubeQuery, YoutubeQueryService>();
-            services.AddSingleton<IYoutubeConfig>(x=> config.GetSection("Youtube").Get<YoutubeConfig>()!);
+            services.AddSingleton<IYoutubeConfig>(x => config.GetSection("Youtube").Get<YoutubeConfig>()!);
             //services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect("redis.polyhydragames.com"));
             //services.AddSingleton<IIMVDBAuthorization, IMVDBAuthorization>()
             ;
@@ -49,7 +48,7 @@ public class ApiTests
     public async Task GetUserVideos(string username, string query)
     {
         var result = await Query.GetUserVideos(username, query);
-        Assert.That(result.Count, Is.GreaterThan(0)); 
+        Assert.That(result.Count, Is.GreaterThan(0));
     }
 
 
@@ -67,7 +66,7 @@ public class ApiTests
         Console.WriteLine(result.ContentDetails.Duration);
         return result.ContentDetails.Duration.ToMinutes();
     }
- 
+
     //[TestCase("segafan001","Dungeon Explorer","tg16", ExpectedResult = 2)]
     //public async Task<int> GetVideosOfGameCount(string username,string gameName, string system)
     //{

@@ -5,7 +5,7 @@ namespace PolyhydraGames.APi.Youtube;
 
 public static class YoutubeQueryServiceExtensions
 {
-    public static IYoutubeUserQuery AsUserQuery(this IYoutubeQuery query, string username) 
+    public static IYoutubeUserQuery AsUserQuery(this IYoutubeQuery query, string username)
         => new YoutubeQueryUserService(query, username);
 
     public static int ToSeconds(this string duration)
@@ -17,7 +17,7 @@ public static class YoutubeQueryServiceExtensions
     public static int ToMinutes(this string duration)
     {
         var time = System.Xml.XmlConvert.ToTimeSpan(duration);
-        return (int)time.TotalSeconds/60;
+        return (int)time.TotalSeconds / 60;
     }
 
 
