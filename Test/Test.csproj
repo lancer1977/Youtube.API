@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Src\PolyhydraGames.APi.Youtube.csproj" />
+    <ProjectReference Include="..\Src\PolyhydraGames.Api.Youtube.csproj" />
   </ItemGroup>
 
   <ItemGroup>
