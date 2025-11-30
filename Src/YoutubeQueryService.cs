@@ -112,7 +112,7 @@ public class YoutubeQueryService : IYoutubeQuery
     }
 
 
-    async Task SearchVideosAsync(YouTubeService youtubeService, string query)
+    async private Task SearchVideosAsync(YouTubeService youtubeService, string query)
     {
         var searchRequest = youtubeService.Search.List("snippet");
         searchRequest.Q = query;
