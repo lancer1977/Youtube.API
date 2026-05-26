@@ -417,3 +417,42 @@ FodyWeavers.xsd
 *.msm
 *.msp
 *.zip
+
+# Hermes standard local noise
+
+# Editor / IDE
+.vscode/
+.idea/
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+# Build / package outputs
+bin/
+obj/
+artifacts/
+publish/
+dist/
+build/
+out/
+release/
+coverage/
+CoverageResults/
+TestResults/
+node_modules/
+
+# Logs / temp
+*.log
+*.tmp
+*.cache
+*.pid
+*.pdb
+*.snupkg
+*.nupkg
+
+# OS cruft
+.DS_Store
+Thumbs.db
