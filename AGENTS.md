@@ -13,6 +13,7 @@ Follow the closest `AGENTS.md` first, then the workspace-root `AGENTS.md` when t
 - Prefer small, traceable changes over broad rewrites.
 - Ask a direct question if the work is ambiguous or would require a risky assumption.
 - Preserve existing patterns unless there is a strong reason to change them.
+- If this repo participates in portfolio monitoring, treat the Dev Forge Work Matrix as the operator-facing control surface; keep repo-local current-work notes short and avoid duplicating portfolio state in multiple places.
 
 ## Validation
 
