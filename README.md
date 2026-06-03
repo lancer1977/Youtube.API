@@ -2,6 +2,15 @@
 
 A .NET 10 library for interacting with the YouTube Data API v3.
 
+## Tags
+
+- api
+- dotnet
+- api-youtube
+- youtube
+- docs
+- testing
+
 ## Project Structure
 
 - `Src/`: Core library implementation.
