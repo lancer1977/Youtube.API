@@ -8,4 +8,5 @@ public interface IYoutubeQuery
     public Task<IList<PlaylistSnippet>> GetUserPlaylists(string username);
     Task<Video?> GetVideoDetails(string videoId);
     Task<string?> GetUserID(string username);
+    Task<int> GetVideosOfGameCount(string username, string gameName, string system);
 }

@@ -10,8 +10,6 @@ namespace PolyhydraGames.APi.Youtube
         public Task<IList<PlaylistSnippet>> GetUserPlaylists() => Query.GetUserPlaylists(Username);
 
         public Task<int> GetVideosOfGameCount(string gameName, string system)
-        {
-            throw new NotImplementedException();
-        }
+            => Query.GetVideosOfGameCount(Username, gameName, system);
     }
 }

@@ -6,5 +6,6 @@ namespace PolyhydraGames.APi.Youtube.Interfaces
     {
         public Task<IList<SearchResult>> GetVideos();
         public Task<IList<PlaylistSnippet>> GetUserPlaylists();
+        public Task<int> GetVideosOfGameCount(string gameName, string system);
     }
 }
