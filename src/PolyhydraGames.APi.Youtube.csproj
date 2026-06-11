@@ -23,6 +23,14 @@
 		<PackageReference Include="Google.Apis.YouTube.v3" Version="1.73.0.4029" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.2" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.9" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+		<ProjectReference Include="../../OAuth/src/PolyhydraGames.PostOffice.Abstractions/PolyhydraGames.PostOffice.Abstractions.csproj" />
+		<ProjectReference Include="../../OAuth/src/PolyhydraGames.PostOffice.Core/PolyhydraGames.PostOffice.Core.csproj" />
+		<ProjectReference Include="../../OAuth/src/PolyhydraGames.Platforms.Abstractions/PolyhydraGames.Platforms.Abstractions.csproj" />
+		<ProjectReference Include="../../Core.Interfaces/Interfaces/PolyhydraGames.Core.Interfaces.csproj" />
 	</ItemGroup>
 
  

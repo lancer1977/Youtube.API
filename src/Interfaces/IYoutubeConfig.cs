@@ -2,6 +2,10 @@
 
 public interface IYoutubeConfig
 {
-    public string ApiKey { get; }
-    public string ApplicationName { get; }
+    string ApiKey { get; }
+    string ApplicationName { get; }
+    string? ClientId { get; }
+    string? ClientSecret { get; }
+    string? RefreshToken { get; }
+    bool HasOAuthCredentials { get; }
 }

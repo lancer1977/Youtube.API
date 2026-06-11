@@ -9,6 +9,11 @@ public sealed class YouTubeApiOptions
     public string? RefreshToken { get; init; }
     public string? ApplicationName { get; init; } = "PolyhydraGames";
     public YouTubeLiveOptions Live { get; init; } = new();
+
+    public bool HasOAuthCredentials =>
+        !string.IsNullOrWhiteSpace(ClientId) &&
+        !string.IsNullOrWhiteSpace(ClientSecret) &&
+        !string.IsNullOrWhiteSpace(RefreshToken);
 }
 
 public sealed class YouTubeLiveOptions

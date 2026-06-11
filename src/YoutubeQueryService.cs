@@ -1,4 +1,7 @@
-﻿using Google.Apis.Services;
+﻿using Google.Apis.Auth.OAuth2;
+using Google.Apis.Auth.OAuth2.Flows;
+using Google.Apis.Auth.OAuth2.Responses;
+using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
 using PolyhydraGames.APi.Youtube.Interfaces;
@@ -8,15 +11,60 @@ namespace PolyhydraGames.APi.Youtube;
 public class YoutubeQueryService : IYoutubeQuery
 {
     private YouTubeService _youtubeService;
-    private readonly IYoutubeConfig _config;
 
     public YoutubeQueryService(IYoutubeConfig config)
     {
-        _config = config;
-        _youtubeService = new YouTubeService(new BaseClientService.Initializer()
+        _youtubeService = CreateService(config);
+    }
+
+    internal static YouTubeService CreateService(IYoutubeConfig config)
+    {
+        if (config.HasOAuthCredentials)
         {
-            ApiKey = _config.ApiKey,
-            ApplicationName = _config.ApplicationName
+            return CreateOAuthService(config);
+        }
+
+        if (!string.IsNullOrWhiteSpace(config.ApiKey))
+        {
+            return CreateApiKeyService(config);
+        }
+
+        throw new InvalidOperationException(
+            "YouTube configuration requires an API key or OAuth client credentials.");
+    }
+
+    private static YouTubeService CreateApiKeyService(IYoutubeConfig config)
+        => new(new BaseClientService.Initializer
+        {
+            ApiKey = config.ApiKey,
+            ApplicationName = config.ApplicationName
+        });
+
+    private static YouTubeService CreateOAuthService(IYoutubeConfig config)
+    {
+        var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
+        {
+            ClientSecrets = new ClientSecrets
+            {
+                ClientId = config.ClientId!,
+                ClientSecret = config.ClientSecret!
+            },
+            Scopes = new[]
+            {
+                YouTubeService.Scope.YoutubeReadonly,
+                YouTubeService.Scope.YoutubeForceSsl
+            }
+        });
+
+        var credential = new UserCredential(
+            flow,
+            config.ApplicationName,
+            new TokenResponse { RefreshToken = config.RefreshToken });
+
+        return new YouTubeService(new BaseClientService.Initializer
+        {
+            HttpClientInitializer = credential,
+            ApplicationName = config.ApplicationName
         });
     }
 
