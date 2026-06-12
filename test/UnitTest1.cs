@@ -2,11 +2,13 @@
 using Google.Apis.YouTube.v3.Data;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using PolyhydraGames.APi.Youtube;
 using PolyhydraGames.APi.Youtube.Configuration;
 using PolyhydraGames.APi.Youtube.Extensions;
 using PolyhydraGames.APi.Youtube.Interfaces;
 using PolyhydraGames.APi.Youtube.Services;
+using PolyhydraGames.APi.Youtube.Models;
 using PolyhydraGames.Core.Test;
 using Microsoft.Extensions.Logging.Abstractions;
 using PolyhydraGames.PostOffice.Abstractions;
@@ -92,6 +94,8 @@ public class ApiTests
         {
             Assert.That(provider.GetRequiredService<IYouTubeLiveChatGateway>(), Is.Not.Null);
             Assert.That(provider.GetRequiredService<YouTubeInboundSource>(), Is.Not.Null);
+            Assert.That(provider.GetRequiredService<IYouTubeChatListener>(), Is.Not.Null);
+            Assert.That(provider.GetRequiredService<IHostedService>(), Is.Not.Null);
             Assert.That(provider.GetRequiredService<IOutboundSink>(), Is.Not.Null);
         });
     }
@@ -133,6 +137,91 @@ public class ApiTests
             Assert.That(captured.PlatformRawViewerId, Is.EqualTo("viewer-42"));
             Assert.That(captured.Meta!["youtubeLiveChatId"], Is.EqualTo("livechat-1"));
             Assert.That(captured.UserRole.HasFlag(ChannelRole.Admin), Is.True);
+        });
+    }
+
+    [Test]
+    public async Task YouTubeChatListener_PublishesMessagesAndSuppressesDuplicates()
+    {
+        var gateway = new FakeYouTubeLiveChatGateway
+        {
+            LiveChatId = "livechat-1",
+            Page = new YouTubeLiveChatPage(
+                new[]
+                {
+                    new LiveChatMessage
+                    {
+                        Id = "message-1",
+                        Snippet = new LiveChatMessageSnippet
+                        {
+                            LiveChatId = "livechat-1",
+                            DisplayMessage = "hello from youtube",
+                            PublishedAtDateTimeOffset = DateTimeOffset.Parse("2026-06-11T00:00:00Z")
+                        },
+                        AuthorDetails = new LiveChatMessageAuthorDetails
+                        {
+                            ChannelId = "viewer-42",
+                            DisplayName = "Watcher"
+                        }
+                    },
+                    new LiveChatMessage
+                    {
+                        Id = "message-1",
+                        Snippet = new LiveChatMessageSnippet
+                        {
+                            LiveChatId = "livechat-1",
+                            DisplayMessage = "duplicate should be ignored",
+                            PublishedAtDateTimeOffset = DateTimeOffset.Parse("2026-06-11T00:00:01Z")
+                        },
+                        AuthorDetails = new LiveChatMessageAuthorDetails
+                        {
+                            ChannelId = "viewer-42",
+                            DisplayName = "Watcher"
+                        }
+                    }
+                },
+                null,
+                TimeSpan.FromHours(1))
+        };
+        var source = new YouTubeInboundSource(NullLogger<YouTubeInboundSource>.Instance);
+        var listener = new YouTubeChatListener(
+            gateway,
+            source,
+            new YouTubeApiOptions
+            {
+                Enabled = true,
+                Live = new YouTubeLiveOptions
+                {
+                    Enabled = true,
+                    OwnerUserId = "00000000-0000-0000-0000-000000000010",
+                    ChannelId = "channel-123",
+                    PollInterval = TimeSpan.FromHours(1)
+                }
+            },
+            NullLogger<YouTubeChatListener>.Instance);
+
+        var envelopes = new List<InboundEnvelope>();
+        var received = new TaskCompletionSource<InboundEnvelope>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var subscription = source.Messages.Subscribe(envelope =>
+        {
+            envelopes.Add(envelope);
+            received.TrySetResult(envelope);
+        });
+
+        await listener.StartAsync();
+        var completed = await Task.WhenAny(received.Task, Task.Delay(TimeSpan.FromSeconds(2)));
+        await listener.StopAsync();
+
+        Assert.That(completed, Is.EqualTo(received.Task));
+        Assert.That(gateway.ResolveCalls, Is.EqualTo(1));
+        Assert.That(gateway.ListCalls, Is.EqualTo(1));
+        Assert.That(envelopes, Has.Count.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(envelopes[0].Channel.Platform, Is.EqualTo(Platform.Youtube));
+            Assert.That(envelopes[0].Channel.PlatformAccountId, Is.EqualTo("channel-123"));
+            Assert.That(envelopes[0].Meta!["youtubeLiveChatId"], Is.EqualTo("livechat-1"));
+            Assert.That(envelopes[0].Text, Is.EqualTo("hello from youtube"));
         });
     }
 
@@ -202,14 +291,18 @@ public class ApiTests
 
     private sealed class FakeYouTubeLiveChatGateway : IYouTubeLiveChatGateway
     {
+        public string? LiveChatId { get; init; } = "resolved-livechat-id";
+        public YouTubeLiveChatPage Page { get; init; } = new(Array.Empty<LiveChatMessage>(), null, null);
         public int ResolvedLiveChatIdCalls { get; private set; }
+        public int ResolveCalls => ResolvedLiveChatIdCalls;
+        public int ListCalls { get; private set; }
         public string? LastLiveChatId { get; private set; }
         public string? LastMessage { get; private set; }
 
         public Task<string?> ResolveLiveChatIdAsync(CancellationToken ct = default)
         {
             ResolvedLiveChatIdCalls++;
-            return Task.FromResult<string?>("resolved-livechat-id");
+            return Task.FromResult(LiveChatId);
         }
 
         public Task<string?> SendMessageAsync(string liveChatId, string text, CancellationToken ct = default)
@@ -219,8 +312,11 @@ public class ApiTests
             return Task.FromResult<string?>("sent-message-id");
         }
 
-        public Task<IReadOnlyList<LiveChatMessage>> ListMessagesAsync(string liveChatId, string? pageToken = null, CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<LiveChatMessage>>(Array.Empty<LiveChatMessage>());
+        public Task<YouTubeLiveChatPage> ListMessagesAsync(string liveChatId, string? pageToken = null, CancellationToken ct = default)
+        {
+            ListCalls++;
+            return Task.FromResult(Page);
+        }
     }
 }
 
