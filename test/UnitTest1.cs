@@ -43,11 +43,11 @@ public class ApiTests
     }
 
     [Test]
-    public void AddYouTubeApi_BindsApiKeyConfigurationAndRegistersQueryService()
-    {
-        var services = new ServiceCollection();
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
+        public void AddYouTubeApi_BindsApiKeyConfigurationAndRegistersQueryService()
+        {
+            var services = new ServiceCollection();
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["YouTube:Enabled"] = "true",
                 ["YouTube:ApiKey"] = "test-api-key",
@@ -260,6 +260,30 @@ public class ApiTests
                     Id = new ResourceId { VideoId = "video-1" },
                     Snippet = new SearchResultSnippet { Title = "Sample video" }
                 }
+            });
+        }
+
+        [Test]
+        public void AddYouTubeApi_DoesNotRegisterLiveStreamingServices()
+        {
+            var services = new ServiceCollection();
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["YouTube:Enabled"] = "true",
+                    ["YouTube:ApiKey"] = "test-api-key"
+                })
+                .Build();
+
+            services.AddYouTubeApi(configuration);
+
+            using var provider = services.BuildServiceProvider();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(provider.GetService<IYouTubeChatListener>(), Is.Null);
+                Assert.That(provider.GetService<IHostedService>(), Is.Null);
+                Assert.That(provider.GetService<IOutboundSink>(), Is.Null);
             });
         }
 

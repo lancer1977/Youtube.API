@@ -43,9 +43,10 @@ services.AddYouTubeLiveStreaming(configuration);
 
 ## Notes
 
-- `AddYouTubeApi` works with either an API key or OAuth credentials.
-- `AddYouTubeLiveStreaming` requires OAuth credentials and is only active on `net10.0` builds.
+- `AddYouTubeApi` is the cross-framework core API surface.
+- `AddYouTubeLiveStreaming` is a separate live-chat surface and only activates on `net10.0` builds.
 - `AddYouTubeLiveStreaming` registers the live chat gateway, inbound source, outbound sink, chat listener, and hosted service.
+- `AddYouTubeApi` does not register live chat or outbound chat services.
 - `Live.OwnerUserId` is required so inbound messages can be routed into the shared post-office channel key model.
 - `Live.BroadcastId` bypasses discovery; `Live.ChannelId` plus `AutoDiscoverActiveBroadcast=true` discovers the active broadcast first.
 - The hosted listener polls live chat, suppresses duplicate message IDs, and stops cleanly with the host.

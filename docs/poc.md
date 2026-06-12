@@ -4,8 +4,8 @@ This POC validates live chat capture and outbound chat for YouTube.
 
 ## What it proves
 
-- `AddYouTubeApi` and `AddYouTubeLiveStreaming` register correctly.
-- The hosted listener polls live chat.
+- `AddYouTubeApi` stays separate from `AddYouTubeLiveStreaming`.
+- The hosted listener polls live chat on `net10.0`.
 - Inbound chat reaches `YouTubeInboundSource`.
 - Outbound messages route through `IOutboundSink` when the target channel is YouTube.
 
@@ -48,6 +48,7 @@ await listener.StopAsync();
 
 ## Notes
 
+- The live-chat surface is `net10.0`-only.
 - `YouTube:Live:AutoDiscoverActiveBroadcast=true` discovers the current broadcast from the configured channel.
 - `YouTube:Live:EnableOutboundChat=true` keeps outbound chat enabled.
 - The package uses OAuth for live chat. An API key alone is not enough.
