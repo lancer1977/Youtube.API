@@ -1,6 +1,6 @@
 # YouTube API Integration
 
-A .NET 10 library for interacting with the YouTube Data API v3.
+YouTube Data API v3 helpers with an optional live chat/outbound surface for Polyhydra Games hosts.
 
 ## Tags
 
@@ -16,6 +16,13 @@ A .NET 10 library for interacting with the YouTube Data API v3.
 - `Src/`: Core library implementation.
 - `Test/`: NUnit tests for the library.
 - `docs/`: Detailed documentation and design decisions.
+
+## Package Facts
+
+- `Project`: `PolyhydraGames.APi.Youtube`
+- `TargetFrameworks`: `net8.0;net10.0`
+- `Language`: C#
+- `Test project`: `test/Test.csproj`
 
 ## Getting Started
 
@@ -38,3 +45,8 @@ Additional documentation can be found in the [docs](docs/) directory.
 - [POC](./docs/poc.md)
 - [Feature Index](./docs/features/README.md)
 - [Roadmap Index](./docs/roadmaps/README.md)
+
+## Notes
+
+- Keep read-only API helpers separate from the live chat surface.
+- The live chat path is intended to stay optional and explicit about its OAuth requirements.
