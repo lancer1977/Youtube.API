@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using PolyhydraGames.APi.Youtube.Configuration;
 using PolyhydraGames.APi.Youtube.Interfaces;
 using PolyhydraGames.APi.Youtube.Services;
@@ -60,6 +61,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(_ => options.Live);
         services.AddSingleton<IYouTubeLiveChatGateway, GoogleYouTubeLiveChatGateway>();
         services.AddSingleton<YouTubeInboundSource>();
+        services.AddSingleton<IYouTubeChatListener, YouTubeChatListener>();
+        services.AddSingleton<IHostedService, YouTubeChatListenerHostedService>();
+        services.AddSingleton<Microsoft.Extensions.Logging.ILogger<YouTubeChatListener>>(Microsoft.Extensions.Logging.Abstractions.NullLogger<YouTubeChatListener>.Instance);
+        services.AddSingleton<Microsoft.Extensions.Logging.ILogger<YouTubeChatListenerHostedService>>(Microsoft.Extensions.Logging.Abstractions.NullLogger<YouTubeChatListenerHostedService>.Instance);
         services.AddSingleton<Microsoft.Extensions.Logging.ILogger<YouTubeInboundSource>>(Microsoft.Extensions.Logging.Abstractions.NullLogger<YouTubeInboundSource>.Instance);
         services.AddSingleton<Microsoft.Extensions.Logging.ILogger<YouTubeOutboundSink>>(Microsoft.Extensions.Logging.Abstractions.NullLogger<YouTubeOutboundSink>.Instance);
 

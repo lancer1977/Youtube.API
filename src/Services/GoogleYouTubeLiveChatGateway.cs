@@ -3,6 +3,7 @@ using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
 using PolyhydraGames.APi.Youtube.Configuration;
 using PolyhydraGames.APi.Youtube.Interfaces;
+using PolyhydraGames.APi.Youtube.Models;
 
 namespace PolyhydraGames.APi.Youtube.Services;
 
@@ -62,14 +63,21 @@ public sealed class GoogleYouTubeLiveChatGateway : IYouTubeLiveChatGateway
         return response.Id;
     }
 
-    public async Task<IReadOnlyList<LiveChatMessage>> ListMessagesAsync(string liveChatId, string? pageToken = null, CancellationToken ct = default)
+    public async Task<YouTubeLiveChatPage> ListMessagesAsync(string liveChatId, string? pageToken = null, CancellationToken ct = default)
     {
         var request = _service.LiveChatMessages.List(liveChatId, "id,snippet,authorDetails");
         request.MaxResults = 200;
         request.PageToken = pageToken;
 
         var response = await request.ExecuteAsync(ct);
-        return response.Items is null ? Array.Empty<LiveChatMessage>() : response.Items.ToList();
+        TimeSpan? pollingInterval = response.PollingIntervalMillis.HasValue && response.PollingIntervalMillis.Value > 0
+            ? TimeSpan.FromMilliseconds(response.PollingIntervalMillis.Value)
+            : null;
+
+        return new YouTubeLiveChatPage(
+            response.Items is null ? Array.Empty<LiveChatMessage>() : response.Items.ToList(),
+            response.NextPageToken,
+            pollingInterval);
     }
 
     private async Task<string?> ResolveFromBroadcastAsync(string broadcastId, CancellationToken ct)

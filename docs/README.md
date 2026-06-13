@@ -1,15 +1,18 @@
 # Api.Youtube
 
-Text-to-Speech API integration for Polyhydra Games.
+YouTube API integration for Polyhydra Games.
 
 ## Contents
 
-- [api.youtube](docs/api.youtube.md)
+- [Docs home](./)
+- [Setup](./setup.md)
+- [POC](./poc.md)
+- [api.youtube](./api-youtube.md)
 
 ## Roadmap
 
-- [v1](docs/roadmap/v1/README.md)
+- [v1](./roadmap/v1/README.md)
 
 ## Decisions
 
-- [Template](docs/decisions/0000-template.md)
+- [Template](./decisions/0000-template.md)
