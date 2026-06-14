@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using PolyhydraGames.APi.Youtube.Configuration;
 using PolyhydraGames.APi.Youtube.Interfaces;
 using PolyhydraGames.APi.Youtube.Services;
@@ -15,22 +16,37 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration,
         bool respectEnabledFlag = true)
     {
-        var section = configuration.GetSection("YouTube");
-        var options = new YouTubeApiOptions();
-        section.Bind(options);
+        services.AddLogging();
 
-        if (respectEnabledFlag && !options.Enabled)
+        var section = configuration.GetSection("YouTube");
+        services
+            .AddOptions<YouTubeApiOptions>()
+            .Bind(section)
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<YouTubeApiOptions>, YouTubeApiOptionsValidator>();
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<YouTubeApiOptions>>().Value);
+
+        if (section is null || !section.Exists())
         {
             return services;
         }
 
-        services.AddSingleton(options);
+        var enabled = section.GetValue<bool>("Enabled");
+
+        if (respectEnabledFlag && !enabled)
+        {
+            return services;
+        }
+
         services.AddSingleton<IYoutubeConfig>(new YoutubeConfig(
-            options.ApiKey ?? string.Empty,
-            options.ApplicationName ?? "PolyhydraGames",
-            options.ClientId,
-            options.ClientSecret,
-            options.RefreshToken));
+            section.GetValue<string?>("ApiKey") ?? string.Empty,
+            section.GetValue<string?>("ApplicationName") ?? "PolyhydraGames",
+            section.GetValue<string?>("ClientId"),
+            section.GetValue<string?>("ClientSecret"),
+            section.GetValue<string?>("RefreshToken")));
+
+        services.AddSingleton<IYouTubeApiClientFactory, YouTubeApiClientFactory>();
+        services.TryAddSingleton<IYouTubeAuthStateStore, YouTubeAuthStateStore>();
         services.AddSingleton<IYoutubeQuery, YoutubeQueryService>();
 
         return services;
@@ -42,37 +58,42 @@ public static class ServiceCollectionExtensions
         bool respectEnabledFlag = true)
     {
         var section = configuration.GetSection("YouTube");
-        var options = new YouTubeApiOptions();
-        section.Bind(options);
+        if (section is null || !section.Exists())
+        {
+            return services;
+        }
 
         services.AddYouTubeApi(configuration, respectEnabledFlag);
 
-#if NET10_0_OR_GREATER
-        if (respectEnabledFlag && !options.Live.Enabled)
+        if (respectEnabledFlag && !section.GetValue<bool>("Live:Enabled"))
         {
             return services;
         }
 
-        if (!options.HasOAuthCredentials)
+        if (string.IsNullOrWhiteSpace(section.GetValue<string?>("ClientId")) ||
+            string.IsNullOrWhiteSpace(section.GetValue<string?>("ClientSecret")) ||
+            string.IsNullOrWhiteSpace(section.GetValue<string?>("RefreshToken")))
         {
             return services;
         }
 
-        services.AddSingleton(_ => options.Live);
+        services.AddSingleton(s => s.GetRequiredService<YouTubeApiOptions>().Live);
+
         services.AddSingleton<IYouTubeLiveChatGateway, GoogleYouTubeLiveChatGateway>();
+        services.AddSingleton<IYouTubeLiveChatService>(sp => sp.GetRequiredService<IYouTubeLiveChatGateway>());
+        services.AddSingleton<IYouTubeLiveBroadcastResolver, YouTubeLiveBroadcastResolver>();
+        services.AddSingleton<IYouTubeStreamContextResolver, YouTubeStreamContextResolver>();
+        services.TryAddSingleton<IYouTubeLiveChatCheckpointStore, YouTubeLiveChatCheckpointStore>();
+        services.AddSingleton<IYouTubeLiveChatPoller, YouTubeLiveChatPoller>();
         services.AddSingleton<YouTubeInboundSource>();
-        services.AddSingleton<IYouTubeChatListener, YouTubeChatListener>();
-        services.AddSingleton<IHostedService, YouTubeChatListenerHostedService>();
-        services.AddSingleton<Microsoft.Extensions.Logging.ILogger<YouTubeChatListener>>(Microsoft.Extensions.Logging.Abstractions.NullLogger<YouTubeChatListener>.Instance);
-        services.AddSingleton<Microsoft.Extensions.Logging.ILogger<YouTubeChatListenerHostedService>>(Microsoft.Extensions.Logging.Abstractions.NullLogger<YouTubeChatListenerHostedService>.Instance);
-        services.AddSingleton<Microsoft.Extensions.Logging.ILogger<YouTubeInboundSource>>(Microsoft.Extensions.Logging.Abstractions.NullLogger<YouTubeInboundSource>.Instance);
-        services.AddSingleton<Microsoft.Extensions.Logging.ILogger<YouTubeOutboundSink>>(Microsoft.Extensions.Logging.Abstractions.NullLogger<YouTubeOutboundSink>.Instance);
+        services.AddSingleton<IYouTubeLiveClient, YouTubeLiveClient>();
+        services.AddHostedService(sp =>
+            (YouTubeLiveChatPoller)sp.GetRequiredService<IYouTubeLiveChatPoller>());
 
-        if (options.Live.EnableOutboundChat)
+        if (section.GetValue<bool>("Live:EnableOutboundChat"))
         {
             services.AddSingleton<IOutboundSink, YouTubeOutboundSink>();
         }
-#endif
 
         return services;
     }

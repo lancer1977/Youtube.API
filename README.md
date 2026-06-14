@@ -50,3 +50,10 @@ Additional documentation can be found in the [docs](docs/) directory.
 
 - Keep read-only API helpers separate from the live chat surface.
 - The live chat path is intended to stay optional and explicit about its OAuth requirements.
+
+## Streamed surface quickstart
+
+```csharp
+services.AddYouTubeApi(configuration);          // data plane
+services.AddYouTubeLiveStreaming(configuration); // inbound + outbound + poller
+```

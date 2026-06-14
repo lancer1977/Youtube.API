@@ -3,6 +3,7 @@ using Google.Apis.YouTube.v3.Data;
 using Microsoft.Extensions.Logging;
 using PolyhydraGames.APi.Youtube.Configuration;
 using PolyhydraGames.APi.Youtube.Interfaces;
+using PolyhydraGames.APi.Youtube.Models;
 using PolyhydraGames.PostOffice.Abstractions;
 using PolyhydraGames.PostOffice.Core;
 using PolyhydraGames.Platforms.Abstractions;
@@ -142,7 +143,7 @@ public sealed class YouTubeChatListener : IYouTubeChatListener
                 }
 
                 pageToken = null;
-                await DelayAsync(page.PollingInterval ?? _options.Live.PollInterval, ct);
+                await DelayAsync(page.PollingInterval, ct);
             }
             catch (OperationCanceledException)
             {
@@ -158,15 +159,15 @@ public sealed class YouTubeChatListener : IYouTubeChatListener
         }
     }
 
-    private void PublishMessages(IReadOnlyList<LiveChatMessage> messages, ChannelKey channelKey)
+    private void PublishMessages(IReadOnlyList<YouTubeLiveChatMessage> messages, ChannelKey channelKey)
     {
         foreach (var message in messages)
         {
             try
             {
-                if (!string.IsNullOrWhiteSpace(message.Id) && !_recentMessageIds.Add(message.Id))
+                if (!string.IsNullOrWhiteSpace(message.MessageId) && !_recentMessageIds.Add(message.MessageId))
                 {
-                    _logger.LogTrace("Duplicate YouTube chat message suppressed: {MessageId}", message.Id);
+                    _logger.LogTrace("Duplicate YouTube chat message suppressed: {MessageId}", message.MessageId);
                     continue;
                 }
 

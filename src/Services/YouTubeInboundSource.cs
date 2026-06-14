@@ -1,6 +1,6 @@
-#if NET10_0_OR_GREATER
 using Google.Apis.YouTube.v3.Data;
 using Microsoft.Extensions.Logging;
+using PolyhydraGames.APi.Youtube.Models;
 using PolyhydraGames.PostOffice.Abstractions;
 using PolyhydraGames.PostOffice.Core;
 using PolyhydraGames.Platforms.Abstractions;
@@ -17,15 +17,18 @@ public sealed class YouTubeInboundSource : InboundSource<YouTubeInboundSource>
 
     protected override Task OnStart(CancellationToken ct) => Task.CompletedTask;
 
-    public void Publish(ChannelKey channelKey, LiveChatMessage message)
+    public void Publish(ChannelKey channelKey, YouTubeLiveChatMessage message)
     {
-        var snippet = message.Snippet;
-        var author = message.AuthorDetails;
+        var snippet = message.RawPayload.Snippet;
+        var author = message.Author;
+        var role = ToChannelRole(author);
 
         var meta = new Dictionary<string, string>
         {
-            ["youtubeMessageId"] = message.Id ?? string.Empty,
-            ["youtubeLiveChatId"] = snippet?.LiveChatId ?? string.Empty,
+            ["youtubeMessageId"] = message.MessageId,
+            ["youtubeLiveChatId"] = message.LiveChatId ?? string.Empty,
+            ["youtubeBroadcastId"] = message.BroadcastId ?? string.Empty,
+            ["youtubeVideoId"] = message.VideoId ?? string.Empty,
             ["youtubeMessageType"] = snippet?.Type ?? string.Empty
         };
 
@@ -34,6 +37,44 @@ public sealed class YouTubeInboundSource : InboundSource<YouTubeInboundSource>
             meta["sourceChannelId"] = author.ChannelId;
         }
 
+        Emit(new InboundEnvelope(
+            channelKey,
+            InboundEnvelope.Sources.YouTubeChat,
+            author?.ChannelId,
+            author?.DisplayName,
+            null,
+            role,
+            snippet?.DisplayMessage ?? snippet?.TextMessageDetails?.MessageText ?? message.Text,
+            message.Timestamp,
+            meta));
+    }
+
+    public void Publish(ChannelKey channelKey, LiveChatMessage message)
+    {
+        var author = message.AuthorDetails;
+        var model = new YouTubeLiveChatMessage(
+            message.Id ?? string.Empty,
+            message.Snippet?.LiveChatId,
+            null,
+            null,
+            message.Snippet?.TextMessageDetails?.MessageText ?? message.Snippet?.DisplayMessage ?? string.Empty,
+            message.Snippet?.PublishedAtDateTimeOffset ?? DateTimeOffset.UtcNow,
+            author is null
+                ? null
+                : new YouTubeLiveChatAuthor(
+                    author.ChannelId,
+                    author.DisplayName,
+                    author.IsChatOwner == true,
+                    author.IsChatModerator == true,
+                    author.IsChatSponsor == true,
+                    author.IsVerified == true),
+            message);
+
+        Publish(channelKey, model);
+    }
+
+    private static ChannelRole ToChannelRole(YouTubeLiveChatAuthor? author)
+    {
         var viewerRole = ChannelRole.Everyone;
         if (author?.IsChatOwner == true)
         {
@@ -55,16 +96,6 @@ public sealed class YouTubeInboundSource : InboundSource<YouTubeInboundSource>
             viewerRole |= ChannelRole.Vip;
         }
 
-        Emit(new InboundEnvelope(
-            channelKey,
-            InboundEnvelope.Sources.YouTubeChat,
-            author?.ChannelId,
-            author?.DisplayName,
-            null,
-            viewerRole,
-            snippet?.DisplayMessage ?? snippet?.TextMessageDetails?.MessageText ?? string.Empty,
-            snippet?.PublishedAtDateTimeOffset ?? DateTimeOffset.UtcNow,
-            meta));
+        return viewerRole;
     }
 }
-#endif

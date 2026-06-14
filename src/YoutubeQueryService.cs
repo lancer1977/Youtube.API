@@ -1,20 +1,24 @@
-﻿using Google.Apis.Auth.OAuth2;
+using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Flows;
 using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
+using Microsoft.Extensions.Logging;
 using PolyhydraGames.APi.Youtube.Interfaces;
 
 namespace PolyhydraGames.APi.Youtube;
 
 public class YoutubeQueryService : IYoutubeQuery
 {
-    private YouTubeService _youtubeService;
+    private readonly YouTubeService _youtubeService;
+    private readonly ILogger<YoutubeQueryService> _logger;
 
-    public YoutubeQueryService(IYoutubeConfig config)
+    public YoutubeQueryService(IYouTubeApiClientFactory clientFactory, ILogger<YoutubeQueryService> logger)
     {
-        _youtubeService = CreateService(config);
+        ArgumentNullException.ThrowIfNull(clientFactory);
+        _youtubeService = clientFactory.CreatePublicReadService();
+        _logger = logger;
     }
 
     internal static YouTubeService CreateService(IYoutubeConfig config)
@@ -46,8 +50,8 @@ public class YoutubeQueryService : IYoutubeQuery
         {
             ClientSecrets = new ClientSecrets
             {
-                ClientId = config.ClientId!,
-                ClientSecret = config.ClientSecret!
+                ClientId = config.ClientId,
+                ClientSecret = config.ClientSecret
             },
             Scopes = new[]
             {
@@ -68,109 +72,102 @@ public class YoutubeQueryService : IYoutubeQuery
         });
     }
 
-    public async Task<string?> GetUserID(string channelName)
+    public async Task<string?> GetUserID(string channelName, CancellationToken ct = default)
     {
         var searchRequest = _youtubeService.Search.List("snippet");
         searchRequest.Q = channelName;
         searchRequest.Type = "channel";
-        searchRequest.MaxResults = 5; // Adjust as needed
-        var result = await searchRequest.ExecuteAsync();
-        return result.Items.Select(x => x.Snippet.ChannelId).FirstOrDefault();
+        searchRequest.MaxResults = 5;
+        var result = await searchRequest.ExecuteAsync(ct);
+
+        return result.Items?.Select(x => x.Snippet?.ChannelId)
+            .FirstOrDefault(id => !string.IsNullOrWhiteSpace(id));
     }
 
-
-    public async Task<Channel?> GetChannel(string channelName)
+    public async Task<Channel?> GetChannel(string channelName, CancellationToken ct = default)
     {
-        var searchRequest = _youtubeService.Channels.List("snippet,contentDetails, statistics");
+        var searchRequest = _youtubeService.Channels.List("snippet,contentDetails,statistics");
         searchRequest.ForHandle = channelName;
-        searchRequest.MaxResults = 5; // Adjust as needed
-        var result = await searchRequest.ExecuteAsync();
-        return result.Items.Select(x => x).FirstOrDefault();
+        searchRequest.MaxResults = 5;
+        var result = await searchRequest.ExecuteAsync(ct);
+        return result.Items?.FirstOrDefault();
     }
 
-    public Task<IList<SearchResult>> GetUserVideos(string username, string query)
+    public Task<IReadOnlyList<SearchResult>> GetUserVideos(string username, string query = "", CancellationToken ct = default)
     {
-        return GetUserUploads(username, query, null);
+        return GetUserUploads(username, query, null, ct);
     }
 
-    public async Task<IList<SearchResult>> GetUserUploads(string username, string query, string? paginationToken)
+    public async Task<IReadOnlyList<SearchResult>> GetUserUploads(
+        string username,
+        string query,
+        string? paginationToken,
+        CancellationToken ct)
     {
-        var user = await GetChannel(username);
-        var searchRequest = _youtubeService.Search.List("snippet");
-        searchRequest.ChannelId = user.Id; // Filter by Channel ID
-        searchRequest.Type = "video"; // Only return videos
-        searchRequest.Order = SearchResource.ListRequest.OrderEnum.Date; // Newest videos first 
-        searchRequest.Q = query;
-        searchRequest.MaxResults = 50; // Limit results
-        searchRequest.PageToken = paginationToken;
-        //searchRequest.
-        //searchRequest.PublishedAfter = DateTime.Now.AddYears(-1); // Only return videos published in the last year
-
-        var response = await searchRequest.ExecuteAsync();
-        Console.WriteLine("Count ::" + response.Items.Count);
-        foreach (var item in response.Items)
+        var user = await GetChannel(username, ct);
+        if (user?.Id is null)
         {
-            Console.WriteLine($"Title: {item.Snippet.Title}, Video ID: {item.Id.VideoId}");
+            _logger.LogWarning("Unable to resolve user channel for username {Username}.", username);
+            return Array.Empty<SearchResult>();
         }
-        return response.Items;
+
+        var request = _youtubeService.Search.List("snippet");
+        request.ChannelId = user.Id;
+        request.Type = "video";
+        request.Order = SearchResource.ListRequest.OrderEnum.Date;
+        request.Q = query;
+        request.MaxResults = 50;
+        request.PageToken = paginationToken;
+
+        var response = await request.ExecuteAsync(ct);
+        return response.Items?.ToList() ?? new List<SearchResult>();
     }
 
-    public async Task<IList<PlaylistSnippet>> GetUserPlaylists(string username)
+    public async Task<IReadOnlyList<PlaylistSnippet>> GetUserPlaylists(string username, CancellationToken ct = default)
     {
-        var user = await GetChannel(username);
+        var user = await GetChannel(username, ct);
+        if (user?.Id is null)
+        {
+            _logger.LogWarning("Unable to resolve user channel for playlist lookup {Username}.", username);
+            return Array.Empty<PlaylistSnippet>();
+        }
+
         var request = _youtubeService.Playlists.List("snippet");
         request.ChannelId = user.Id;
-        var searchResponse = await request.ExecuteAsync();
-        return searchResponse.Items.Select(x => x.Snippet).ToList();
+        var searchResponse = await request.ExecuteAsync(ct);
+        return searchResponse.Items?.Select(x => x.Snippet).ToList() ?? new List<PlaylistSnippet>();
     }
 
-    public async Task<Video?> GetVideoDetails(string videoId)
+    public async Task<Video?> GetVideoDetails(string videoId, CancellationToken ct = default)
     {
-
         var videoRequest = _youtubeService.Videos.List("snippet,statistics,contentDetails");
         videoRequest.Id = videoId;
+        var videoResponse = await videoRequest.ExecuteAsync(ct);
 
-        var videoResponse = await videoRequest.ExecuteAsync();
-
-
-
-        return videoResponse.Items.First();
+        return videoResponse.Items?.FirstOrDefault();
     }
 
-    public async Task<int> GetVideosOfGameCount(string username, string gameName, string system)
+    public async Task<int> GetVideosOfGameCount(string username, string gameName, string system, CancellationToken ct = default)
     {
-        var user = await GetChannel(username);
+        var user = await GetChannel(username, ct);
+        if (user?.ContentDetails?.RelatedPlaylists is null)
+        {
+            _logger.LogWarning("Unable to resolve uploads playlist for user {Username}.", username);
+            return 0;
+        }
+
         var uploadsPlaylistId = user.ContentDetails.RelatedPlaylists.Uploads;
+        if (string.IsNullOrWhiteSpace(uploadsPlaylistId))
+        {
+            _logger.LogWarning("Uploads playlist missing for user {Username}.", username);
+            return 0;
+        }
 
-
-        Console.WriteLine($"Uploads Playlist ID: {uploadsPlaylistId}");
-
-        // Step 2: Get videos from the Uploads Playlist
         var playlistRequest = _youtubeService.PlaylistItems.List("snippet");
         playlistRequest.PlaylistId = uploadsPlaylistId;
-        //playlistRequest.MaxResults = 10; // Limit results
+        playlistRequest.MaxResults = 50;
+        var playlistResponse = await playlistRequest.ExecuteAsync(ct);
 
-        var playlistResponse = await playlistRequest.ExecuteAsync();
-
-        foreach (var item in playlistResponse.Items)
-        {
-            Console.WriteLine($"Title: {item.Snippet.Title}, Video ID: {item.Snippet.ResourceId.VideoId}");
-        }
-        return playlistResponse.Items.Select(x => x.Snippet.Title).Count();
-    }
-
-
-    async private Task SearchVideosAsync(YouTubeService youtubeService, string query)
-    {
-        var searchRequest = youtubeService.Search.List("snippet");
-        searchRequest.Q = query;
-        searchRequest.MaxResults = 5;
-
-        var searchResponse = await searchRequest.ExecuteAsync();
-
-        foreach (var result in searchResponse.Items)
-        {
-            Console.WriteLine($"Title: {result.Snippet.Title}, Channel: {result.Snippet.ChannelTitle}");
-        }
+        return playlistResponse.Items?.Count ?? 0;
     }
 }
