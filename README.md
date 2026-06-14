@@ -57,3 +57,23 @@ Additional documentation can be found in the [docs](docs/) directory.
 services.AddYouTubeApi(configuration);          // data plane
 services.AddYouTubeLiveStreaming(configuration); // inbound + outbound + poller
 ```
+
+## Publishing
+
+Use `./pub.sh` to restore, test, pack, and publish.
+
+- GitHub Packages is the default publish target.
+- Set `PUBLISH_NUGET_ORG=true` only when the package should also go to nuget.org.
+- Set `DRY_RUN=true` to skip pushes.
+- Use `PACKAGE_API_KEY`, `GHCR_TOKEN`, `GITHUB_PACKAGES_TOKEN`, `GITHUB_TOKEN`, or `GH_TOKEN` for GitHub Packages auth.
+
+For private/internal consumption from GitHub Packages, add the GitHub NuGet
+source for this organization and authenticate with a GitHub token or PAT:
+
+```bash
+dotnet nuget add source https://nuget.pkg.github.com/lancer1977/index.json \
+  --name lancer1977 \
+  --username YOUR_GITHUB_USERNAME \
+  --password YOUR_GITHUB_TOKEN \
+  --store-password-in-clear-text
+```

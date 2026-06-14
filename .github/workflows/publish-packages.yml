@@ -1,0 +1,64 @@
+name: publish-packages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      publish_nuget_org:
+        description: "Also push the packed nupkgs to nuget.org"
+        required: false
+        default: "false"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore APi.Youtube.sln
+
+      - name: Build
+        run: dotnet build APi.Youtube.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test APi.Youtube.sln --configuration Release --no-restore --no-build --verbosity normal
+
+      - name: Determine version
+        id: version
+        run: |
+          if git describe --tags --abbrev=0 >/dev/null 2>&1; then
+            VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')
+          else
+            VERSION="0.0.$(git rev-list --count HEAD)"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Pack
+        run: dotnet pack Src/PolyhydraGames.APi.Youtube.csproj --configuration Release --no-build -p:PackageVersion=${{ steps.version.outputs.version }} --output ./output
+
+      - name: Publish to GitHub Packages
+        run: |
+          for pkg in ./output/*.nupkg; do
+            dotnet nuget push "$pkg" --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --api-key "${{ secrets.GITHUB_TOKEN }}" --skip-duplicate
+          done
+
+      - name: Publish to nuget.org
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_nuget_org == 'true' }}
+        run: |
+          for pkg in ./output/*.nupkg; do
+            dotnet nuget push "$pkg" --source "https://api.nuget.org/v3/index.json" --api-key "${{ secrets.NUGET_API_KEY }}" --skip-duplicate
+          done
