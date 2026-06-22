@@ -1,0 +1,35 @@
+name: integration
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore "APi.Youtube.sln"
+
+      - name: Test integration suite
+        env:
+          YOUTUBE_INTEGRATION: "1"
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          YOUTUBE_APPLICATION_NAME: ${{ secrets.YOUTUBE_APPLICATION_NAME }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          YOUTUBE_OWNER_USER_ID: ${{ secrets.YOUTUBE_OWNER_USER_ID }}
+          YOUTUBE_CHANNEL_ID: ${{ secrets.YOUTUBE_CHANNEL_ID }}
+          YOUTUBE_BROADCAST_ID: ${{ secrets.YOUTUBE_BROADCAST_ID }}
+        run: dotnet test "APi.Youtube.sln" --configuration Release --no-restore --no-build --verbosity normal --filter Category=Integration

@@ -1,0 +1,36 @@
+# Reusable local smoke baseline for a containerized app.
+# Copy this file into the owning repo and replace the placeholders.
+
+services:
+  app:
+    build:
+      context: ${APP_BUILD_CONTEXT:-.}
+      dockerfile: ${APP_DOCKERFILE:-Dockerfile}
+    image: ${APP_LOCAL_IMAGE:-example-app-local:dev}
+    container_name: ${APP_CONTAINER_NAME:-example-app-local}
+    restart: ${APP_RESTART:-unless-stopped}
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${APP_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:${APP_CONTAINER_PORT:-8080}
+      APP__ENVIRONMENT: ${APP_ENVIRONMENT:-Development}
+    ports:
+      - "${APP_LOCAL_PORT:-8080}:${APP_CONTAINER_PORT:-8080}"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:${APP_CONTAINER_PORT:-8080}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    # Optional runtime extras copied from live stacks when needed:
+    # volumes:
+    #   - type: bind
+    #     source: ${APP_DATA_SOURCE:-./data}
+    #     target: ${APP_DATA_TARGET:-/data}
+    # devices:
+    #   - /dev/dri
+    # group_add:
+    #   - video
+    # cap_add:
+    #   - SYS_PTRACE
+    # networks:
+    #   - ${APP_INTERNAL_NETWORK:-app-internal}

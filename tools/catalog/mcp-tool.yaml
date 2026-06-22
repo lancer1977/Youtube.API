@@ -1,0 +1,42 @@
+# Starter manifest for a new MCP-backed tool.
+# Copy this file into tools/catalog/tools/<tool-id>.yaml in the target repo
+# and replace the placeholder values with the actual tool contract.
+
+id: tool-id
+kind: mcp
+class: ops
+title: Tool Name MCP
+status: spec
+description: Short summary of the tool's purpose.
+entrypoint:
+  localCommand: /absolute/path/to/tool-entrypoint
+  containerImage: ghcr.io/owner/tool-id:latest
+transports:
+  - stdio
+targets:
+  - codex
+  - claude
+  - openclaw
+secrets:
+  required:
+    - TOOL_URL
+  any_of:
+    - - TOOL_TOKEN
+      - TOOL_USERNAME
+      - TOOL_PASSWORD
+permissions:
+  read:
+    - inventory
+    - status
+  write: []
+policy:
+  read_only_default: true
+  write_requires_approval: true
+  post_write_verification: true
+health:
+  command: tool_id_health
+deployment:
+  local: true
+  portainer: true
+  swarm: false
+  independentHost: true

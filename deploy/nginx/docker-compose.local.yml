@@ -1,0 +1,61 @@
+# Local build-and-smoke baseline for an app behind Nginx.
+# Copy this folder into the owning repo and replace the placeholders.
+
+services:
+  app:
+    build:
+      context: ${APP_BUILD_CONTEXT:-.}
+      dockerfile: ${APP_DOCKERFILE:-Dockerfile}
+    image: ${APP_LOCAL_IMAGE:-example-app:local}
+    container_name: ${APP_CONTAINER_NAME:-example-app-app}
+    restart: ${APP_RESTART:-unless-stopped}
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${APP_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:${APP_CONTAINER_PORT:-8080}
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      ConnectionStrings__DefaultConnection: ${APP_CONNECTION_STRING:-Data Source=/data/app.db}
+    expose:
+      - "${APP_CONTAINER_PORT:-8080}"
+    volumes:
+      - app-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:${APP_CONTAINER_PORT:-8080}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - app-internal
+
+  nginx:
+    image: ${NGINX_IMAGE:-nginx:1.27-alpine}
+    container_name: ${NGINX_CONTAINER_NAME:-example-app-nginx}
+    restart: ${NGINX_RESTART:-unless-stopped}
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "${WEB_LOCAL_PORT:-8080}:80"
+    configs:
+      - source: nginx_default_conf
+        target: /etc/nginx/conf.d/app.conf
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/health >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - app-internal
+
+configs:
+  nginx_default_conf:
+    file: ./default.conf
+
+volumes:
+  app-data:
+    name: ${APP_DATA_VOLUME:-example-app-data}
+
+networks:
+  app-internal:
+    driver: bridge

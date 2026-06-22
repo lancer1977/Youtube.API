@@ -1,0 +1,70 @@
+# Reusable default-deploy baseline for an image-first stack.
+# Copy this file into the owning repo and replace the placeholders.
+
+services:
+  app:
+    image: ${APP_IMAGE:-ghcr.io/lancer1977/example-app:main}
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${APP_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:${APP_CONTAINER_PORT:-8080}
+      APP__ENVIRONMENT: ${APP_ENVIRONMENT:-Production}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:${APP_CONTAINER_PORT:-8080}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+        window: 3m
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        monitor: 120s
+        failure_action: rollback
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.${APP_NAME:-example-app}.rule=Host(`${APP_HOST:-example.polyhydragames.com}`)"
+        - "traefik.http.routers.${APP_NAME:-example-app}.entrypoints=websecure"
+        - "traefik.http.routers.${APP_NAME:-example-app}.tls=true"
+        - "traefik.http.services.${APP_NAME:-example-app}.loadbalancer.server.port=${APP_CONTAINER_PORT:-8080}"
+        - "traefik.http.middlewares.${APP_NAME:-example-app}-internal.ipwhitelist.sourcerange=${APP_ALLOWED_SOURCE_RANGES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}"
+        - "traefik.http.routers.${APP_NAME:-example-app}.middlewares=${APP_NAME:-example-app}-internal"
+        - "traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK:-traefik-public}"
+        # Optional metadata labels seen in gitops:
+        # - "com.centurylinklabs.watchtower.enable=true"
+        # - "com.polyhydragames.service=${APP_NAME:-example-app}"
+        # - "com.polyhydragames.tier=apps"
+    # Optional direct publish when the stack should expose a port without Traefik:
+    # ports:
+    #   - target: ${APP_CONTAINER_PORT:-8080}
+    #     published: ${APP_PUBLISHED_PORT:-8080}
+    #     protocol: tcp
+    #     mode: ingress
+    # Optional runtime/stateful extras from live stacks:
+    # volumes:
+    #   - type: volume
+    #     source: ${APP_DATA_VOLUME:-app-data}
+    #     target: ${APP_DATA_TARGET:-/data}
+    # secrets:
+    #   - app_secret
+    networks:
+      - app-internal
+      - traefik-public
+
+volumes:
+  app-data:
+    name: ${APP_DATA_VOLUME:-app-data}
+
+networks:
+  app-internal:
+    driver: overlay
+    name: ${APP_INTERNAL_NETWORK:-app-internal}
+  traefik-public:
+    external: true
+    name: ${TRAEFIK_PUBLIC_NETWORK:-traefik-public}

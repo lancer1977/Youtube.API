@@ -1,0 +1,15 @@
+name: change-me
+repo_root: change-me
+
+languages: []
+frameworks: []
+
+ci:
+  build: []
+  test: []
+
+devstudio:
+  runtime_model: three-agent
+  backlog_ordering: filename
+  skip_promoted_planning: true
+  one_stage_per_run: true

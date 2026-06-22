@@ -1,0 +1,84 @@
+# Portainer-ready Nginx front-door baseline.
+# Copy this folder into the owning repo and replace the placeholders.
+
+services:
+  app:
+    image: ${APP_IMAGE:-ghcr.io/lancer1977/example-app:main}
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${APP_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:${APP_CONTAINER_PORT:-8080}
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      ConnectionStrings__DefaultConnection: ${APP_CONNECTION_STRING:-Data Source=/data/app.db}
+    expose:
+      - "${APP_CONTAINER_PORT:-8080}"
+    volumes:
+      - app-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:${APP_CONTAINER_PORT:-8080}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+        window: 3m
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        monitor: 120s
+        failure_action: rollback
+    networks:
+      - app-internal
+
+  nginx:
+    image: ${NGINX_IMAGE:-nginx:1.27-alpine}
+    environment:
+      NGINX_ENTRYPOINT_QUIET_LOGS: "1"
+    depends_on:
+      - app
+    ports:
+      - target: 80
+        published: ${WEB_PUBLISHED_PORT:-8080}
+        protocol: tcp
+        mode: ingress
+    configs:
+      - source: nginx_default_conf
+        target: /etc/nginx/conf.d/app.conf
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/health >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+        window: 3m
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        monitor: 120s
+        failure_action: rollback
+    networks:
+      - app-internal
+
+configs:
+  nginx_default_conf:
+    file: ./default.conf
+
+volumes:
+  app-data:
+    name: ${APP_DATA_VOLUME:-example-app-data}
+
+networks:
+  app-internal:
+    driver: overlay
