@@ -1,7 +1,6 @@
 # Api.Youtube Roadmaps
 
-Roadmap documentation for Api.Youtube lives here.
+This local planning file has been migrated. GitHub Issues are the canonical tracker.
 
-## Active Roadmaps
-
-- [Version 1 roadmap](../roadmap/v1/README.md)
+Canonical GitHub issue: https://github.com/lancer1977/Youtube.API/issues/10
+Original source kind: roadmap
